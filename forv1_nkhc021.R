@@ -4,24 +4,27 @@ library(dkstat)
 
 #### Realvækst NKHC021 ####
 ## Hent forbrugsdata via DST API
-Forbrug.meta <- dst_meta(table="NKHC021", lang="da")
+NKHC021.meta <- dst_meta(table="NKHC021", lang="da")
 
-Forbrug.filter <- list(
+NKHC021.filter <- list(
   FORMAAAL = "I alt",
   PRISENHED = "2020-priser, kædede værdier",
   SÆSON = "Sæsonkorrigeret",
   Tid = "*")
 
-Forbrugdata <- dst_get_data(table = "NKHC021", query = Forbrug.filter)
-Forbrugdata <- Forbrugdata[,-c(1:3)]
+NKHC021 <- dst_get_data(table = "NKHC021", query = NKHC021.filter)
+NKHC021 <- NKHC021[,-c(1:3)]
 
 ## Udregner den kvartalvise årlige realvæskt
-Forbrugdata$Realvækst <- (Forbrugdata$value / dplyr::lag(Forbrugdata$value, 4) - 1) * 100
+NKHC021$Realvækst <- (NKHC021$value / dplyr::lag(NKHC021$value, 4) - 1) * 100
 
-Privatforbrug.periode <- as.data.frame(Forbrugdata[41:nrow(Forbrugdata),c(1,3)]) #tager for den udvalgte periode
-rownames(Privatforbrug.periode) <- NULL
+## Skær til fra 2000Q1
+NKHC021 <- NKHC021[-1:-40, -2] #tager for den udvalgte periode
+rownames(NKHC021) <- NULL
 
-#### Forbrugerforvetninger FORV1 ####
+
+
+########### Forbrugerforvetninger FORV1 #############
 FORV1.meta <- dst_meta(table = "FORV1", lang = "da")
 
 ## Liste med relevante filter-variabler.
@@ -30,6 +33,8 @@ FORV1.filter <- list(
   Tid = "*")
 
 FORV1 <- dst_get_data(table = "FORV1", query = FORV1.filter, lang = "da")
+
+## Bredt format
 FORV1 <- pivot_wider(FORV1, names_from = INDIKATOR, values_from = value)
 
 ## Gruppering og opsummering med udregning af mean
@@ -44,5 +49,5 @@ FORV1 <- FORV1[-1:-101,]
 
 
 #### Dataframe med FTI og Realvækst i lige lange mulige perioder ####
-FTI <- data.frame(Privatforbrug.periode)
+FTI <- data.frame(NKHC021)
 FTI <- cbind(FTI, FORV1[1:nrow(FTI),-1])
